@@ -264,6 +264,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
 
         val dataSource = DataSource.Builder()
                 .setDataType(DataType.TYPE_NUTRITION)
+                .setType(DataSource.TYPE_RAW)
                 .setDevice(Device.getLocalDevice(activity!!.applicationContext))
                 .setAppPackageName(activity!!.applicationContext)
                 .build()
