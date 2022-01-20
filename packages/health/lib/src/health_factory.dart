@@ -220,7 +220,7 @@ class HealthFactory {
       'totalDietaryFiber': totalDietaryFiber,
       'totalPotassium': totalPotassium,
     };
-    bool? success = await _channel.invokeMethod('writeData', args);
+    bool? success = await _channel.invokeMethod('writeNutritionData', args);
     return success ?? false;
   }
 
