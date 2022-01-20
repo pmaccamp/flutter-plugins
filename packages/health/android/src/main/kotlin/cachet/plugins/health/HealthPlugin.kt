@@ -59,6 +59,30 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
     private var SLEEP_AWAKE = "SLEEP_AWAKE"
     private var SLEEP_IN_BED = "SLEEP_IN_BED"
 
+
+    private var MEAL_TYPE_BREAKFAST = "MEAL_TYPE_BREAKFAST"
+    private var MEAL_TYPE_DINNER = "MEAL_TYPE_DINNER"
+    private var MEAL_TYPE_LUNCH = "MEAL_TYPE_LUNCH"
+    private var MEAL_TYPE_SNACK = "MEAL_TYPE_SNACK"
+    private var MEAL_TYPE_UNKNOWN = "MEAL_TYPE_UNKNOWN"
+
+    private var NUTRIENT = "NUTRIENT"
+//
+//    private var NUTRIENT_CALORIES = "NUTRIENT_CALORIES"
+//    private var NUTRIENT_TOTAL_FAT = "NUTRIENT_TOTAL_FAT"
+//    private var NUTRIENT_SATURATED_FAT = "NUTRIENT_SATURATED_FAT"
+//    private var NUTRIENT_UNSATURATED_FAT = "NUTRIENT_UNSATURATED_FAT"
+//    private var NUTRIENT_POLYUNSATURATED_FAT = "NUTRIENT_POLYUNSATURATED_FAT"
+//    private var NUTRIENT_MONOUNSATURATED_FAT = "NUTRIENT_MONOUNSATURATED_FAT"
+//    private var NUTRIENT_TRANS_FAT = "NUTRIENT_TRANS_FAT"
+//    private var NUTRIENT_CHOLESTEROL = "NUTRIENT_CHOLESTEROL"
+//    private var NUTRIENT_SODIUM = "NUTRIENT_SODIUM"
+//    private var NUTRIENT_POTASSIUM = "NUTRIENT_POTASSIUM"
+//    private var NUTRIENT_TOTAL_CARBS = "NUTRIENT_TOTAL_CARBS"
+//    private var NUTRIENT_DIETARY_FIBER = "NUTRIENT_DIETARY_FIBER"
+//    private var NUTRIENT_SUGAR = "NUTRIENT_SUGAR"
+//    private var NUTRIENT_PROTEIN = "NUTRIENT_PROTEIN"
+
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
         channel?.setMethodCallHandler(this)
@@ -165,7 +189,19 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             SLEEP_ASLEEP -> DataType.TYPE_SLEEP_SEGMENT
             SLEEP_AWAKE -> DataType.TYPE_SLEEP_SEGMENT
             SLEEP_IN_BED -> DataType.TYPE_SLEEP_SEGMENT
+            NUTRIENT -> DataType.TYPE_NUTRITION
             else -> throw IllegalArgumentException("Unsupported dataType: $type")
+        }
+    }
+
+    private fun keyToMealType(type: String) : Int {
+        return when (type) {
+            MEAL_TYPE_BREAKFAST -> Field.MEAL_TYPE_BREAKFAST
+            MEAL_TYPE_DINNER -> Field.MEAL_TYPE_DINNER
+            MEAL_TYPE_LUNCH -> Field.MEAL_TYPE_LUNCH
+            MEAL_TYPE_SNACK -> Field.MEAL_TYPE_SNACK
+            MEAL_TYPE_UNKNOWN ->   Field.MEAL_TYPE_UNKNOWN
+            else -> throw java.lang.IllegalArgumentException("Unsupported mealType: $type")
         }
     }
 
@@ -209,6 +245,73 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             Field.FORMAT_INT32 -> value.asInt()
             Field.FORMAT_STRING -> value.asString()
             else -> Log.e("Unsupported format:", value.format.toString())
+        }
+    }
+
+    private fun writeNutritionData(call: MethodCall, result: Result) {
+
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+
+
+        val startTime = call.argument<Long>("startTime")!!
+        val endTime = call.argument<Long>("endTime")!!
+
+        val typesBuilder = FitnessOptions.builder()
+        typesBuilder.addDataType(DataType.TYPE_NUTRITION, FitnessOptions.ACCESS_WRITE)
+
+        val dataSource = DataSource.Builder()
+                .setDataType(DataType.TYPE_NUTRITION)
+                .setDevice(Device.getLocalDevice(activity!!.applicationContext))
+                .setAppPackageName(activity!!.applicationContext)
+                .build()
+
+        val builder = if (startTime == endTime)
+            DataPoint.builder(dataSource)
+                    .setTimestamp(startTime, TimeUnit.MILLISECONDS)
+        else
+            DataPoint.builder(dataSource)
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+
+        val mealType = call.argument<String>("mealType")!!
+        builder.setField(Field.FIELD_FOOD_ITEM, call.argument<String>("foodName"))
+                .setField(Field.FIELD_MEAL_TYPE, keyToMealType(mealType))
+
+        val nutrients = mapOf(
+                Field.NUTRIENT_TOTAL_FAT to call.argument<Float>("totalFat"),
+                Field.NUTRIENT_SODIUM to call.argument<Float>("totalSodium"),
+                Field.NUTRIENT_SATURATED_FAT to call.argument<Float>("totalSaturatedFat"),
+                Field.NUTRIENT_PROTEIN to call.argument<Float>("totalProtein"),
+                Field.NUTRIENT_TOTAL_CARBS to call.argument<Float>("totalTotalCarbs"),
+                Field.NUTRIENT_CHOLESTEROL to call.argument<Float>("totalCholesterol"),
+                Field.NUTRIENT_CALORIES to call.argument<Float>("totalCalories"),
+                Field.NUTRIENT_SUGAR to call.argument<Float>("totalSugar"),
+                Field.NUTRIENT_DIETARY_FIBER to call.argument<Float>("totalDietaryFiber"),
+                Field.NUTRIENT_POTASSIUM to call.argument<Float>("totalPotassium")
+        )
+
+        builder.setField(Field.FIELD_NUTRIENTS, nutrients)
+
+        val dataSet = DataSet.builder(dataSource)
+                .add(builder.build())
+                .build()
+        val fitnessOptions = typesBuilder.build()
+        try {
+            val googleSignInAccount = GoogleSignIn.getAccountForExtension(activity!!.applicationContext, fitnessOptions)
+            Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                    .insertData(dataSet)
+                    .addOnSuccessListener {
+                        Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet added successfully!")
+                        result.success(true)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w("FLUTTER_HEALTH::ERROR", "There was an error adding the DataSet", e)
+                        result.success(false)
+                    }
+        } catch (e3: Exception) {
+            result.success(false)
         }
     }
 
@@ -592,6 +695,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "requestAuthorization" -> requestAuthorization(call, result)
             "getData" -> getData(call, result)
             "writeData" -> writeData(call, result)
+            "writeNutritionData" -> writeNutritionData(call, result)
             "getTotalStepsInInterval" -> getTotalStepsInInterval(call, result)
             "hasPermissions" -> hasPermissions(call, result)
             else -> result.notImplemented()

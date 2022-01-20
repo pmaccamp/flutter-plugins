@@ -35,6 +35,7 @@ enum HealthDataType {
   SLEEP_AWAKE,
   EXERCISE_TIME,
   WORKOUT,
+  NUTRIENT,
 
   // Heart Rate events (specific to Apple Watch)
   HIGH_HEART_RATE_EVENT,
@@ -108,6 +109,7 @@ const List<HealthDataType> _dataTypeKeysAndroid = [
   HealthDataType.SLEEP_ASLEEP,
   HealthDataType.SLEEP_IN_BED,
   HealthDataType.WATER,
+  HealthDataType.NUTRIENT,
 ];
 
 /// Maps a [HealthDataType] to a [HealthDataUnit].
@@ -208,10 +210,7 @@ const HealthDataUnitJsonValue = {
   HealthDataUnit.LITER: 'liter',
 };
 
-const PlatformTypeJsonValue = {
-  PlatformType.IOS: 'ios',
-  PlatformType.ANDROID: 'android'
-};
+const PlatformTypeJsonValue = {PlatformType.IOS: 'ios', PlatformType.ANDROID: 'android'};
 
 /// List of all [HealthDataPoint] units.
 enum HealthDataUnit {
@@ -231,4 +230,12 @@ enum HealthDataUnit {
   SIEMENS,
   UNKNOWN_UNIT,
   LITER,
+}
+
+enum MealType {
+  MEAL_TYPE_BREAKFAST,
+  MEAL_TYPE_DINNER,
+  MEAL_TYPE_LUNCH,
+  MEAL_TYPE_SNACK,
+  MEAL_TYPE_UNKNOWN,
 }

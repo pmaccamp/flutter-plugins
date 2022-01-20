@@ -60,19 +60,15 @@ class _HealthAppState extends State<HealthApp> {
     // requesting access to the data types before reading them
     // note that strictly speaking, the [permissions] are not
     // needed, since we only want READ access.
-    bool requested =
-        await health.requestAuthorization(types, permissions: permissions);
+    bool requested = await health.requestAuthorization(types, permissions: permissions);
 
     if (requested) {
       try {
         // fetch health data
-        List<HealthDataPoint> healthData =
-            await health.getHealthDataFromTypes(yesterday, now, types);
+        List<HealthDataPoint> healthData = await health.getHealthDataFromTypes(yesterday, now, types);
 
         // save all the new data points (only the first 100)
-        _healthDataList.addAll((healthData.length < 100)
-            ? healthData
-            : healthData.sublist(0, 100));
+        _healthDataList.addAll((healthData.length < 100) ? healthData : healthData.sublist(0, 100));
       } catch (error) {
         print("Exception in getHealthDataFromTypes: $error");
       }
@@ -85,8 +81,7 @@ class _HealthAppState extends State<HealthApp> {
 
       // update the UI to display the results
       setState(() {
-        _state =
-            _healthDataList.isEmpty ? AppState.NO_DATA : AppState.DATA_READY;
+        _state = _healthDataList.isEmpty ? AppState.NO_DATA : AppState.DATA_READY;
       });
     } else {
       print("Authorization not granted");
@@ -102,28 +97,54 @@ class _HealthAppState extends State<HealthApp> {
     _nofSteps = Random().nextInt(10);
     final types = [HealthDataType.STEPS, HealthDataType.BLOOD_GLUCOSE];
     final rights = [HealthDataAccess.WRITE, HealthDataAccess.WRITE];
-    final permissions = [
-      HealthDataAccess.READ_WRITE,
-      HealthDataAccess.READ_WRITE
-    ];
-    bool? hasPermissions =
-        await HealthFactory.hasPermissions(types, permissions: rights);
+    final permissions = [HealthDataAccess.READ_WRITE, HealthDataAccess.READ_WRITE];
+    bool? hasPermissions = await HealthFactory.hasPermissions(types, permissions: rights);
     if (hasPermissions == false) {
       await health.requestAuthorization(types, permissions: permissions);
     }
 
     _mgdl = Random().nextInt(10) * 1.0;
-    bool success = await health.writeHealthData(
-        _nofSteps.toDouble(), HealthDataType.STEPS, earlier, now);
+    bool success = await health.writeHealthData(_nofSteps.toDouble(), HealthDataType.STEPS, earlier, now);
 
     if (success) {
-      success = await health.writeHealthData(
-          _mgdl, HealthDataType.BLOOD_GLUCOSE, now, now);
+      success = await health.writeHealthData(_mgdl, HealthDataType.BLOOD_GLUCOSE, now, now);
     }
 
     setState(() {
       _state = success ? AppState.DATA_ADDED : AppState.DATA_NOT_ADDED;
     });
+  }
+
+  Future addNutritionData() async {
+    final types = [HealthDataType.NUTRIENT];
+    final permissions = [HealthDataAccess.READ_WRITE];
+    bool? hasPermissions = await HealthFactory.hasPermissions(types, permissions: permissions);
+    if (hasPermissions == false) {
+      await health.requestAuthorization(types, permissions: permissions);
+    }
+
+    final now = DateTime.now();
+
+    final today = DateTime(now.year, now.month, now.day);
+
+    bool success = await health.writeNutritionData(
+      MealType.MEAL_TYPE_BREAKFAST,
+      today,
+      today,
+      "Banana",
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+      Random().nextDouble() * 20,
+    );
+
+    print(success);
   }
 
   /// Fetch steps from the health plugin and show them in the app.
@@ -251,6 +272,12 @@ class _HealthAppState extends State<HealthApp> {
                   addData();
                 },
                 icon: Icon(Icons.add),
+              ),
+              IconButton(
+                onPressed: () {
+                  addNutritionData();
+                },
+                icon: Icon(Icons.food_bank),
               ),
               IconButton(
                 onPressed: () {
