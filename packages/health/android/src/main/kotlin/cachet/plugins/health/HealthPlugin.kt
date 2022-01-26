@@ -17,6 +17,7 @@ import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.plugin.common.PluginRegistry.ActivityResultListener
 import com.google.android.gms.fitness.data.*
+import com.google.android.gms.fitness.request.DataDeleteRequest
 import com.google.android.gms.fitness.request.SessionReadRequest
 import com.google.android.gms.fitness.result.SessionReadResponse
 import com.google.android.gms.tasks.OnFailureListener
@@ -248,6 +249,46 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
     }
 
+    private fun deleteNutritionData(call: MethodCall, result: Result){
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+
+        val typesBuilder = FitnessOptions.builder()
+        typesBuilder.addDataType(DataType.TYPE_NUTRITION, FitnessOptions.ACCESS_WRITE)
+
+        val fitnessOptions = typesBuilder.build()
+
+
+        val startTime = call.argument<Long>("startTime")!!
+        val endTime = call.argument<Long>("endTime")!!
+
+        val request = DataDeleteRequest.Builder()
+                .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                .addDataType(DataType.TYPE_NUTRITION)
+                .build()
+
+        val googleSignInAccount = GoogleSignIn.getAccountForExtension(activity!!.applicationContext, fitnessOptions)
+
+        try {
+            Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                    .deleteData(request)
+                    .addOnSuccessListener {
+                        Log.i("FLUTTER_HEALTH::SUCCESS", "Nutrition Data deleted successfully!")
+                        result.success(true)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w("FLUTTER_HEALTH::ERROR", "There was an error deleting the Nutrition Data", e)
+                        result.success(false)
+                    }
+        }
+        catch (e3: Exception) {
+            result.success(false)
+        }
+
+    }
+
     private fun writeNutritionData(call: MethodCall, result: Result) {
 
         if (activity == null) {
@@ -304,11 +345,11 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
                     .insertData(dataSet)
                     .addOnSuccessListener {
-                        Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet added successfully!")
+                        Log.i("FLUTTER_HEALTH::SUCCESS", "Nutrition Data added successfully!")
                         result.success(true)
                     }
                     .addOnFailureListener { e ->
-                        Log.w("FLUTTER_HEALTH::ERROR", "There was an error adding the DataSet", e)
+                        Log.w("FLUTTER_HEALTH::ERROR", "There was an error adding the Nutrition Data", e)
                         result.success(false)
                     }
         } catch (e3: Exception) {
@@ -699,6 +740,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "writeNutritionData" -> writeNutritionData(call, result)
             "getTotalStepsInInterval" -> getTotalStepsInInterval(call, result)
             "hasPermissions" -> hasPermissions(call, result)
+            "deleteNutritionData" -> deleteNutritionData(call,result)
             else -> result.notImplemented()
         }
     }
