@@ -322,16 +322,16 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 .setField(Field.FIELD_MEAL_TYPE, keyToMealType(mealType))
 
         val nutrients = mapOf(
-                Field.NUTRIENT_TOTAL_FAT to call.argument<Double>("totalFat")!!.toFloat(),
-                Field.NUTRIENT_SODIUM to call.argument<Double>("totalSodium")!!.toFloat(),
-                Field.NUTRIENT_SATURATED_FAT to call.argument<Double>("totalSaturatedFat")!!.toFloat(),
-                Field.NUTRIENT_PROTEIN to call.argument<Double>("totalProtein")!!.toFloat(),
-                Field.NUTRIENT_TOTAL_CARBS to call.argument<Double>("totalTotalCarbs")!!.toFloat(),
-                Field.NUTRIENT_CHOLESTEROL to call.argument<Double>("totalCholesterol")!!.toFloat(),
-                Field.NUTRIENT_CALORIES to call.argument<Double>("totalCalories")!!.toFloat(),
-                Field.NUTRIENT_SUGAR to call.argument<Double>("totalSugar")!!.toFloat(),
-                Field.NUTRIENT_DIETARY_FIBER to call.argument<Double>("totalDietaryFiber")!!.toFloat(),
-                Field.NUTRIENT_POTASSIUM to call.argument<Double>("totalPotassium")!!.toFloat()
+                Field.NUTRIENT_TOTAL_FAT to call.argument<Double>("totalFat")?.toFloat(),
+                Field.NUTRIENT_SODIUM to call.argument<Double>("totalSodium")?.toFloat(),
+                Field.NUTRIENT_SATURATED_FAT to call.argument<Double>("totalSaturatedFat")?.toFloat(),
+                Field.NUTRIENT_PROTEIN to call.argument<Double>("totalProtein")?.toFloat(),
+                Field.NUTRIENT_TOTAL_CARBS to call.argument<Double>("totalTotalCarbs")?.toFloat(),
+                Field.NUTRIENT_CHOLESTEROL to call.argument<Double>("totalCholesterol")?.toFloat(),
+                Field.NUTRIENT_CALORIES to call.argument<Double>("totalCalories")?.toFloat(),
+                Field.NUTRIENT_SUGAR to call.argument<Double>("totalSugar")?.toFloat(),
+                Field.NUTRIENT_DIETARY_FIBER to call.argument<Double>("totalDietaryFiber")?.toFloat(),
+                Field.NUTRIENT_POTASSIUM to call.argument<Double>("totalPotassium")?.toFloat()
         )
 
         builder.setField(Field.FIELD_NUTRIENTS, nutrients)
