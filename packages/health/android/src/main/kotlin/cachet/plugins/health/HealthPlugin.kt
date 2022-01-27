@@ -265,7 +265,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val endTime = call.argument<Long>("endTime")!!
 
         val request = DataDeleteRequest.Builder()
-                .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                .setTimeInterval(startTime-1, endTime+1, TimeUnit.MILLISECONDS)
                 .addDataType(DataType.TYPE_NUTRITION)
                 .build()
 
@@ -320,6 +320,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val mealType = call.argument<String>("mealType")!!
         builder.setField(Field.FIELD_FOOD_ITEM, call.argument<String>("foodName"))
                 .setField(Field.FIELD_MEAL_TYPE, keyToMealType(mealType))
+
 
         val nutrients = mapOf(
                 Field.NUTRIENT_TOTAL_FAT to (call.argument<Double>("totalFat")?.toFloat()  ?: 0f),
