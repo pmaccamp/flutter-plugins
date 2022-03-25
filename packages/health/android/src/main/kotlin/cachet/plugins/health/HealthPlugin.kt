@@ -161,6 +161,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 Log.d("FLUTTER_HEALTH", "Access Granted!")
                 mResult?.success(true)
             } else if (resultCode == Activity.RESULT_CANCELED) {
+
                 Log.d("FLUTTER_HEALTH", "Access Denied!")
                 mResult?.success(false)
             }
@@ -636,14 +637,79 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val optionsToRegister = callToHealthTypes(call)
         mResult = result
 
-        val isGranted = GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(activity), optionsToRegister)
+        val lastSignedInAccount = GoogleSignIn.getLastSignedInAccount(activity);
 
-        mResult?.success(isGranted)
+        if(lastSignedInAccount == null){
+
+            result.success(false)
+            return
+        }
+//        lastSignedInAccount.
+
+
+        val isGranted = GoogleSignIn.hasPermissions(lastSignedInAccount, optionsToRegister)
+
+        if(isGranted){
+            try {
+
+
+            val typesBuilder = FitnessOptions.builder()
+            typesBuilder.addDataType(DataType.TYPE_WEIGHT)
+
+            val fitnessOptions = typesBuilder.build()
+            val googleSignInAccount = GoogleSignIn.getAccountForExtension(activity!!.applicationContext, fitnessOptions)
+
+            var onSuccess = { _: DataReadResponse  ->
+
+                result.success(true) ;
+            }
+
+            var onError = { _:java.lang.Exception   ->
+
+                result.success(false) ;
+            }
+                Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                        .readData(DataReadRequest.Builder()
+                                .read(DataType.TYPE_WEIGHT)
+                                .setTimeRange(System.currentTimeMillis() - 1000, System.currentTimeMillis() , TimeUnit.MILLISECONDS)
+                                .build())
+                        .addOnSuccessListener (threadPoolExecutor!!, onSuccess)
+                        .addOnFailureListener(onError)
+
+            }catch (error:java.lang.Exception){
+
+                result.success(false) ;
+            }
+        }
+
+
+    }
+
+    /// force the "requestAuthorization" without checking for permissions
+    private fun forceRequestAuthorization(call: MethodCall, result: Result) {
+        if (activity == null) {
+
+            result.success(false)
+            return
+        }
+
+        val optionsToRegister = callToHealthTypes(call)
+        mResult = result
+
+
+
+            GoogleSignIn.requestPermissions(
+                    activity!!,
+                    GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
+                    GoogleSignIn.getLastSignedInAccount(activity),
+                    optionsToRegister)
+
     }
 
     /// Called when the "requestAuthorization" is invoked from Flutter 
     private fun requestAuthorization(call: MethodCall, result: Result) {
         if (activity == null) {
+
             result.success(false)
             return
         }
@@ -742,6 +808,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "getTotalStepsInInterval" -> getTotalStepsInInterval(call, result)
             "hasPermissions" -> hasPermissions(call, result)
             "deleteNutritionData" -> deleteNutritionData(call,result)
+            "forceRequestAuthorization" -> forceRequestAuthorization(call,result)
             else -> result.notImplemented()
         }
     }

@@ -114,6 +114,29 @@ class HealthFactory {
     return isAuthorized ?? false;
   }
 
+  /// same as [requestAuthorization] but without checking for existing permission first
+  Future<bool> forceRequestAuthorization(
+    List<HealthDataType> types, {
+    List<HealthDataAccess>? permissions,
+  }) async {
+    if (permissions != null && permissions.length != types.length) {
+      throw ArgumentError('The length of [types] must be same as that of [permissions].');
+    }
+
+    final mTypes = List<HealthDataType>.from(types, growable: true);
+    final mPermissions = permissions == null
+        ? List<int>.filled(types.length, HealthDataAccess.READ.index, growable: true)
+        : permissions.map((permission) => permission.index).toList();
+
+    // on Android, if BMI is requested, then also ask for weight and height
+    if (_platformType == PlatformType.ANDROID) _handleBMI(mTypes, mPermissions);
+
+    List<String> keys = mTypes.map((e) => _enumToString(e)).toList();
+    final bool? isAuthorized =
+        await _channel.invokeMethod('forceRequestAuthorization', {'types': keys, "permissions": mPermissions});
+    return isAuthorized ?? false;
+  }
+
   static void _handleBMI(List<HealthDataType> mTypes, List<int> mPermissions) {
     final index = mTypes.indexOf(HealthDataType.BODY_MASS_INDEX);
 
