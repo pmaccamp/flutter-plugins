@@ -181,16 +181,23 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
     func hasPermission(type: HKSampleType, access: Int) -> Bool? {
         
         if #available(iOS 11.0, *) {
+        
             let status = healthStore.authorizationStatus(for: type)
-           
-            switch access {
-            case 0: // READ
-                return nil
-            case 1: // WRITE
-                return  (status == HKAuthorizationStatus.sharingAuthorized)
-            default: // READ_WRITE
-                return nil
+            
+            if(status == HKAuthorizationStatus.sharingAuthorized){
+                return true;
             }
+            
+            return false;
+           
+//            switch access {
+//            case 0: // READ
+//                return nil
+//            case 1: // WRITE
+//                return  (status == HKAuthorizationStatus.sharingAuthorized)
+//            default: // READ_WRITE
+//                return nil
+//            }
         }
         else {
            return nil
@@ -241,10 +248,12 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
            
         }
+        
 
         if #available(iOS 11.0, *) {
             healthStore.requestAuthorization(toShare: typesToWrite, read: typesToRead) { (success, error) in
                 DispatchQueue.main.async {
+             
                     result(success)
                 }
             }
