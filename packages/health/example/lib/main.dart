@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:permission_handler/permission_handler.dart';
+
 import 'package:flutter/material.dart';
 import 'package:health/health.dart';
 
@@ -41,8 +43,9 @@ class _HealthAppState extends State<HealthApp> {
       HealthDataType.WEIGHT,
       HealthDataType.HEIGHT,
       HealthDataType.BLOOD_GLUCOSE,
-      // Uncomment this line on iOS - only available on iOS
-      // HealthDataType.DISTANCE_WALKING_RUNNING,
+      HealthDataType.WORKOUT,
+      // Uncomment these lines on iOS - only available on iOS
+      // HealthDataType.AUDIOGRAM
     ];
 
     // with coresponsing permissions
@@ -51,12 +54,13 @@ class _HealthAppState extends State<HealthApp> {
       HealthDataAccess.READ,
       HealthDataAccess.READ,
       HealthDataAccess.READ,
+      HealthDataAccess.READ,
+      // HealthDataAccess.READ,
     ];
 
     // get data within the last 24 hours
     final now = DateTime.now();
-    final yesterday = now.subtract(Duration(days: 1));
-
+    final yesterday = now.subtract(Duration(days: 5));
     // requesting access to the data types before reading them
     // note that strictly speaking, the [permissions] are not
     // needed, since we only want READ access.
@@ -92,7 +96,7 @@ class _HealthAppState extends State<HealthApp> {
   /// Add some random health data.
   Future addData() async {
     final now = DateTime.now();
-    final earlier = now.subtract(Duration(minutes: 5));
+    final earlier = now.subtract(Duration(minutes: 20));
 
     _nofSteps = Random().nextInt(10);
     final types = [HealthDataType.STEPS, HealthDataType.BLOOD_GLUCOSE];
@@ -100,7 +104,7 @@ class _HealthAppState extends State<HealthApp> {
     final permissions = [HealthDataAccess.READ_WRITE, HealthDataAccess.READ_WRITE];
     bool? hasPermissions = await HealthFactory.hasPermissions(types, permissions: rights);
     if (hasPermissions == false) {
-      await health.requestAuthorization(types, permissions: permissions);
+      perm = await health.requestAuthorization(types, permissions: permissions);
     }
 
     _mgdl = Random().nextInt(10) * 1.0;
@@ -126,26 +130,26 @@ class _HealthAppState extends State<HealthApp> {
 
     final now = DateTime.now();
 
-    final today = DateTime(now.year, now.month, now.day );
+    final today = DateTime(now.year, now.month, now.day);
 
-  //   bool success = await health.writeNutritionData(
-  //  mealType:   MealType.MEAL_TYPE_BREAKFAST,
-  //  startTime:   today,
-  // endTime:    today,
-  //    foodName: "Banana",
-  //   totalFat:  Random().nextDouble() * 20,
-  //    totalSodium: Random().nextDouble() * 20,
-  //   totalSaturatedFat:  Random().nextDouble() * 20,
-  //    totalProtein: Random().nextDouble() * 20,
-  //    totalTotalCarbs: Random().nextDouble() * 20,
-  //    dietaryCalcium: Random().nextDouble() * 20,
-  //   totalDietaryFiber:  Random().nextDouble() * 20,
-  //   dietaryCopper:  Random().nextDouble() * 20,
-  //   dietaryPhosphorus:  Random().nextDouble() * 20,
-  //   dietaryZinc:  Random().nextDouble() * 20,
-  //   );
+    //   bool success = await health.writeNutritionData(
+    //  mealType:   MealType.MEAL_TYPE_BREAKFAST,
+    //  startTime:   today,
+    // endTime:    today,
+    //    foodName: "Banana",
+    //   totalFat:  Random().nextDouble() * 20,
+    //    totalSodium: Random().nextDouble() * 20,
+    //   totalSaturatedFat:  Random().nextDouble() * 20,
+    //    totalProtein: Random().nextDouble() * 20,
+    //    totalTotalCarbs: Random().nextDouble() * 20,
+    //    dietaryCalcium: Random().nextDouble() * 20,
+    //   totalDietaryFiber:  Random().nextDouble() * 20,
+    //   dietaryCopper:  Random().nextDouble() * 20,
+    //   dietaryPhosphorus:  Random().nextDouble() * 20,
+    //   dietaryZinc:  Random().nextDouble() * 20,
+    //   );
 
-  bool success = await health.deleteNutritionData(endTime: today,startTime: today);
+    bool success = await health.deleteNutritionData(endTime: today, startTime: today);
 
     print(success);
   }
@@ -174,7 +178,7 @@ class _HealthAppState extends State<HealthApp> {
         _state = (steps == null) ? AppState.NO_DATA : AppState.STEPS_READY;
       });
     } else {
-      print("Authorization not granted");
+      print("Authorization not granted - error in authorization");
       setState(() => _state = AppState.DATA_NOT_FETCHED);
     }
   }
@@ -198,6 +202,21 @@ class _HealthAppState extends State<HealthApp> {
         itemCount: _healthDataList.length,
         itemBuilder: (_, index) {
           HealthDataPoint p = _healthDataList[index];
+          if (p.value is AudiogramHealthValue) {
+            return ListTile(
+              title: Text("${p.typeString}: ${p.value}"),
+              trailing: Text('${p.unitString}'),
+              subtitle: Text('${p.dateFrom} - ${p.dateTo}'),
+            );
+          }
+          if (p.value is WorkoutHealthValue) {
+            return ListTile(
+              title: Text(
+                  "${p.typeString}: ${(p.value as WorkoutHealthValue).totalEnergyBurned} ${(p.value as WorkoutHealthValue).totalEnergyBurnedUnit?.typeToString()}"),
+              trailing: Text('${(p.value as WorkoutHealthValue).workoutActivityType.typeToString()}'),
+              subtitle: Text('${p.dateFrom} - ${p.dateTo}'),
+            );
+          }
           return ListTile(
             title: Text("${p.typeString}: ${p.value}"),
             trailing: Text('${p.unitString}'),
@@ -228,7 +247,7 @@ class _HealthAppState extends State<HealthApp> {
   }
 
   Widget _dataAdded() {
-    return Text('$_nofSteps steps and $_mgdl mgdl are inserted successfully!');
+    return Text('Data points inserted successfully!');
   }
 
   Widget _stepsFetched() {
