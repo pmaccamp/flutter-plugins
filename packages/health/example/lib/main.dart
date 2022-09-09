@@ -104,7 +104,7 @@ class _HealthAppState extends State<HealthApp> {
     final permissions = [HealthDataAccess.READ_WRITE, HealthDataAccess.READ_WRITE];
     bool? hasPermissions = await HealthFactory.hasPermissions(types, permissions: rights);
     if (hasPermissions == false) {
-      perm = await health.requestAuthorization(types, permissions: permissions);
+      // perm = await health.requestAuthorization(types, permissions: permissions);
     }
 
     _mgdl = Random().nextInt(10) * 1.0;
