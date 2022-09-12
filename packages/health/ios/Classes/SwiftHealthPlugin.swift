@@ -1032,7 +1032,5 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         allDataTypes = allDataTypes.union(headacheType)
     }
 }
-
-
-
-
+    
+}
